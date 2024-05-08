@@ -51,11 +51,11 @@ This works differently depending on your operating system.
 
 First try (on windows):
 ```bash 
-venv/bin/activate
+venv/Scripts/activate
 ```
 If that fails try:
 ```bash 
-source venv/bin/activate
+source venv/Scripts/activate
 ```
 On mac try
 ```bash
