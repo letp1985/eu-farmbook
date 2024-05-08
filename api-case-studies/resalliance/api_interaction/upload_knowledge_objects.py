@@ -11,12 +11,11 @@ API_ADDRESS = os.environ.get("API_ADDRESS")
 project_id = os.environ.get("PROJECT_ID")
 
 metadata_folder_path = "data"
-metadata_file_name = "20240409. Batch Upload Resalliance-EU_LPUpdate.xlsx"
+# Add your metadata file name and .xlsx extension
+metadata_file_name = "ENTER_FILE_NAME.xlsx"
 metadata_file_path = os.path.join(metadata_folder_path, metadata_file_name)
 ko_folder_path = "data/kos/"
-
-# issue for the file types - should add this to the excel file
-file_type = '_EN.pdf'
+file_type = '.pdf'
 
 
 def process_metadata():
@@ -26,8 +25,9 @@ def process_metadata():
     """
     processor = ExcelDataProcessor(metadata_file_path)
     processor.rename_columns()
-    processor.convert_creators_column()
     processor.convert_list_properties()
+    processor.convert_file_name_and_language()
+    processor.convert_creators_column()
     processor.create_contributor_custom_metadata()
     processor.remove_columns()
 
@@ -80,7 +80,7 @@ def upload_ko_to_eufarmbook(ko_file_name, ko_content):
         return response
 
 
-def upload_metadata_to_eufarmbook(database_id: str, metadata: dict, dry_run: bool):
+def upload_metadata_to_eufarmbook(knowledge_objects: list, metadata: dict, dry_run: bool):
     """
     Uploads the knowledge object metadata.
     If dry_run is set to True, it will only validate the metadata and not actually upload it.
@@ -101,10 +101,7 @@ def upload_metadata_to_eufarmbook(database_id: str, metadata: dict, dry_run: boo
         'project_id': project_id
     }
 
-    language = metadata['language']
-    del metadata['language']
-    metadata['knowledge_objects'] = [{'database_id': database_id,
-                                      'language': language}]
+    metadata['knowledge_objects'] = knowledge_objects
 
     json = {
         'user_tokens': token,
@@ -123,28 +120,36 @@ def upload_knowledge_objects_and_metadata(dry_run: bool):
     df = process_metadata()
 
     for index, row in df.iterrows():
-        # Access the value of column 'A' for the current row
-        filename = row['Factsheet']
-        ko_file_name = f"{filename}{file_type}"
-        print(f"Attempting upload for {ko_file_name}")
-        ko_file_name, ko_content = get_knowledge_object(knowledge_object_file_name=ko_file_name)
-        print(f"Uploading knowledge object {ko_file_name}")
-        try:
-            upload_ko = upload_ko_to_eufarmbook(ko_file_name, ko_content)
-            database_id = upload_ko.json()['database_id']
-            # Convert the current row to JSON with proper formatting
-            metadata_json = row.to_json(orient='index', indent=4)
-            metadata_json = metadata_json.replace("\\/", "/")
-            # remove unnecessary columns
-            metadata_json_dict = json.loads(metadata_json)
-            del metadata_json_dict['Factsheet']
 
-            response = upload_metadata_to_eufarmbook(database_id, metadata=metadata_json_dict, dry_run=dry_run)
-            if response.status_code != 200:
-                print(f"An error occured {response.status_code} - {response.json()}")
-            else:
-                print(f"Success: Uploaded metadata for {filename} and knowledge object {database_id}. "
-                      f"EU-FarmBook ID: {response.json()}")
-        except Exception as e:
-            print(f"An error occurred uploading knowledge object {e}")
+        filename_lang = row['file_name_lang']
+        print(f"Processing metadata for {filename_lang}")
+
+        doc_id_lang = []
+
+        for file in filename_lang:
+            filename = file['filename']
+            ko_file_name = f"{filename}{file_type}"
+            print(f"Attempting upload for {ko_file_name}")
+            ko_file_name, ko_content = get_knowledge_object(knowledge_object_file_name=ko_file_name)
+            print(f"Uploading knowledge object {ko_file_name}")
+            try:
+                upload_ko = upload_ko_to_eufarmbook(ko_file_name, ko_content)
+                database_id = upload_ko.json()['database_id']
+                doc_id_lang.append({"database_id": database_id, "language": file['language']})
+            except Exception as e:
+                print(f"An error occurred uploading knowledge object {e}")
+
+        # Convert the current row to JSON with proper formatting
+        metadata_json = row.to_json(orient='index', indent=4)
+        metadata_json = metadata_json.replace("\\/", "/")
+        metadata_json_dict = json.loads(metadata_json)
+
+        response = upload_metadata_to_eufarmbook(knowledge_objects=doc_id_lang,
+                                                 metadata=metadata_json_dict,
+                                                 dry_run=dry_run)
+        if response.status_code != 200:
+            print(f"An error occurred {response.status_code} - {response.json()}")
+        else:
+            print(f"Success: Uploaded metadata for Row {index + 1}: knowledge objects {doc_id_lang}. "
+                  f"EU-FarmBook ID: {response.json()}")
 

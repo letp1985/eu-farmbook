@@ -1,5 +1,5 @@
 import pandas as pd
-
+import os
 
 class ExcelDataProcessor:
     def __init__(self, file_loc: str):
@@ -7,15 +7,23 @@ class ExcelDataProcessor:
         self.df = self.load_excel_to_pandas()
 
     def load_excel_to_pandas(self):
-        """Loads an Excel file into a pandas DataFrame."""
-        with open(self.file_loc, 'rb') as f:
-            return pd.read_excel(f, dtype={'Factsheet': str}, parse_dates=['Date of completion'])
+        """Loads an Excel file into a pandas DataFrame with error handling for missing files."""
+        # Check if file exists before attempting to open
+        if not os.path.exists(self.file_loc):
+            raise FileNotFoundError(f"No file found at the specified path: {self.file_loc}")
 
-
+        try:
+            # Attempt to load the Excel file into a DataFrame
+            with open(self.file_loc, 'rb') as f:
+                return pd.read_excel(f, dtype={'Factsheet': str})
+        except Exception as e:
+            # Handle other potential exceptions that could arise during file reading
+            raise Exception(f"Failed to load Excel file: {e}")
 
     def rename_columns(self):
         """Renames DataFrame columns according to a predefined schema."""
         self.df.rename(columns={
+            'Factsheet': 'file_name',
             'Title': 'title',
             'Description': 'description',
             'keywords': 'keywords',
@@ -30,8 +38,6 @@ class ExcelDataProcessor:
             'Licence': 'license',
             'Intended Purpose': 'intended_purpose'
         }, inplace=True)
-
-
 
     def remove_columns(self):
         """Renames DataFrame columns according to a predefined schema."""
@@ -65,6 +71,33 @@ class ExcelDataProcessor:
         # Optionally, drop the 'creators_preprocessing' column
         self.df.drop(['creators_preprocessing'], axis=1, inplace=True)
 
+    def convert_file_name_and_language(self):
+        """Create a new column 'file_name_lang' where each row is a list of dictionaries containing filename-language pairs."""
+        # Initialize the new column with empty lists instead of sets
+        self.df['file_name_lang'] = [[] for _ in range(len(self.df))]
+
+        # Iterate through each row of the DataFrame
+        for index, row in self.df.iterrows():
+            # Extract filenames and languages, ensuring they are lists
+            filenames = row['file_name'].split(";")  # Split the filenames string by semicolon
+            languages = row['language'].split(";")  # Split the languages string by semicolon
+
+            # Iterate through paired filenames and languages
+            for filename, language in zip(filenames, languages):
+                # Trim whitespace and add the filename-language tuple to the list for this row
+                filename = filename.strip()
+                language = language.strip()
+                # Ensure no duplicates are added
+                if (filename, language) not in self.df.at[index, 'file_name_lang']:
+                    self.df.at[index, 'file_name_lang'].append((filename, language))
+
+        # Convert each list to a list of dictionaries and update the DataFrame
+        self.df['file_name_lang'] = self.df['file_name_lang'].apply(
+            lambda lst: [{"filename": fn, "language": lang} for fn, lang in lst])
+
+        # Optionally drop the 'file_name' and 'language' columns if they are no longer needed
+        self.df.drop(['file_name', 'language'], axis=1, inplace=True)
+
     def convert_semi_colon_separated_string_to_list(self, column_name):
         """Converts a comma-separated string in a DataFrame column to a list of unique strings, preserving the order."""
 
@@ -77,9 +110,9 @@ class ExcelDataProcessor:
 
     def convert_list_properties(self):
 
-        for column in ['keywords', 'geographic_locations', 'intended_purpose', 'topics', 'subtopics', 'type',
-                       'Type of Solution', 'Sector', 'ResAlliance Partner', 'Climate hazard', 'Good Practice(s)']:
-
+        for column in ['keywords', 'geographic_locations', 'intended_purpose', 'topics', 'subtopics',
+                       'type', 'Type of Solution', 'Sector', 'ResAlliance Partner', 'Climate hazard',
+                       'Good Practice(s)']:
             self.convert_semi_colon_separated_string_to_list(column)
 
     def create_contributor_custom_metadata(self):
