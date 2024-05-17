@@ -1,11 +1,11 @@
-# ResAlliance integration with EU-FarmBook API
+# G4AE integration with EU-FarmBook API
 
-This python project is an example of how to integrate the ResAlliance platform with the EU-FarmBook API. 
+This python project is an example of how to integrate the G4AE platform with the EU-FarmBook API. 
 
 The folder structure is as follows:
 
 ```
-resalliance/
+g4ae/
 ├── api_interaction/
 │   ├── upload_knowledge_objects.py - This is the main file that interacts with the EU-FarmBook API
 │   ├── __init__.py
@@ -21,7 +21,7 @@ resalliance/
 ├── main.py - This script runs the entire process for uploading KOs and metadata to the EU-FarmBook API
 ├── README.md - The file you're in now
 ├── requirements.txt - The required packages for the project
-├── .env - Your environement variables
+├── .env - Your environement variables - you must create this file yourself and add the required variables
 ```  
 
 
@@ -34,16 +34,17 @@ Start by reading the `help.md` file in the root directory to get a better unders
 API_ADDRESS=https://api-public.eufarmbook.eu
 EMAIL=Your email for the EU-FarmBook
 PASSWORD=Your password for the EU-FarmBook
-PROJECT_ID = The ID for the project you are uploading KOs for. See the command below in Step 3 to check the ID for your project
+PROJECT_ID = The ID for the project you are uploading KOs for. See the command below to check the ID for your project
 ```
 
 ### 2. Create a virtual environment to handle the required python packages
 
-Navigate to the root directory and run the following command to create a virtual environment:
+Navigate to the root of the repository and run the following command to create a virtual environment:
 
 ```bash
 python3 -m venv ./venv
 ```
+
 
 Activate the virtual environment:
 
@@ -66,15 +67,17 @@ You should know that you have activated the virtual environment when you see the
 
 You can read more about activating virtual environments [here](https://docs.python.org/3/library/venv.html)
 
+
 Install the required packages:
 
 ```bash
 pip install -r requirements.txt
 ```
 
+
 ### 3. Check the status of the EU-FarmBook API and see which projects you have access to
 
-Ensure you are in the root directory of the ResAlliance project.
+Ensure you are in the root directory of the G4AE project.
 
 Run the following command to get the status of the API
 
@@ -100,19 +103,19 @@ You will see a list of projects you have access to.
 
 Make sure you enter the correct project_id in the .env file (`PROJECT_ID=123` or `PROJECT_ID=456`). 
 
+
 ### 4. Make sure your data is in the correct format and stored in the data folder. 
 
 In the data folder you save the .xlsx file with your metadata, and the knowledge objects themselves.
 
-- The metadata file goes directly in the `data/` folder
+- The metadata files for each Knowledge Object go directly in the `data/` folder and must be named the same as their corresponding
+Knowledge Object. For example, if the Knowledge Object is called 'my_first_knowledge_object.pdf', the metadata file should be called 'my_first_knowledge_object.xlsm'
 - The knowledge objects go in the `data/kos` folder
 
-*Remember!!!* You must set the metadata_file_name in the `api_interaction/upload_knowledge_objects.py` file to the name of the
-.xlsx file you have saved in the `data/` folder.
 
 ### 5. Run the main.py file to upload the KOs and metadata to the EU-FarmBook API
 
-Ensure you are in the root directory of the ResAlliance project.
+Ensure you are in the root directory of the g4ae project.
 
 You can then execute the main.py file by running the following command:
 
