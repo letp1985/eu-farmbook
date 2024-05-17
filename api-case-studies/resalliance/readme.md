@@ -29,6 +29,12 @@ resalliance/
 
 Start by reading the `help.md` file in the root directory to get a better understanding of how to navigate the terminal and the basic commands you will need to use to run this project.
 
+### Initial setup
+
+- Clone the repository or copy all the files from this root directory to your local drive e.g. to `C:\Users\YOUR_USER\workspace\here`
+- Ensure you have python installed on your machine. You can download python from [here](https://www.python.org/downloads/) 
+  - **Note**: This project was built with python 3.10.11 
+  - 
 ### 1. Create a .env file in the root directory with the following environment variables:
 ```
 API_ADDRESS=https://api-public.eufarmbook.eu
